@@ -1,0 +1,266 @@
+/*
+Copyright (C) 2016 andylizi
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+@import url(../webfont/roboto-webfont.css);
+.can_select_text, input[type="text"], input[type="password"] {
+  -moz-user-select: text !important;
+  -o-user-select: text !important;
+  -khtml-user-select: text !important;
+  -webkit-user-select: text !important;
+  -ms-user-select: text !important; }
+
+* {
+  -moz-user-select: none;
+  -o-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  font: 16px/1.5 'Microsoft Yahei', 'Tahoma';
+  /* font: 16px/1.5 'Roboto', 'sans-serif', 'Tahoma'; */
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+  background-clip: border-box; }
+
+button {
+  outline: none; }
+
+.button_pink {
+  position: relative;
+  text-align: center;
+  color: white;
+  cursor: pointer;
+  padding: 0 16px;
+  border: none;
+  background: #FF4081;
+  border-radius: 3px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: all 0.5s ease;
+  -webkit-transition: all 0.5s ease;
+  -moz-transition: all 0.5s ease;
+  -o-transition: all 0.5s ease;
+  font-size: 15px;
+  line-height: 32px; }
+  .button_pink:active {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.12); }
+  .button_pink:disabled {
+    background-color: rgba(0, 0, 0, 0.15) !important;
+    color: rgba(0, 0, 0, 0.3) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    font-weight: 600 !important; }
+  .button_pink:enabled:hover {
+    background: #ff7da9; }
+  .button_pink .large_button:disabled {
+    background-color: graytext !important;
+    color: white !important;
+    font-weight: 500 !important; }
+
+.button_blue {
+  position: relative;
+  text-align: center;
+  color: white;
+  cursor: pointer;
+  padding: 0 16px;
+  border: none;
+  background: #2196f3;
+  border-radius: 3px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: all 0.5s ease;
+  -webkit-transition: all 0.5s ease;
+  -moz-transition: all 0.5s ease;
+  -o-transition: all 0.5s ease;
+  font-size: 15px;
+  line-height: 32px; }
+  .button_blue:active {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.12); }
+  .button_blue:disabled {
+    background-color: rgba(0, 0, 0, 0.15) !important;
+    color: rgba(0, 0, 0, 0.3) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    font-weight: 600 !important; }
+  .button_blue:enabled:hover {
+    background: #5bb1f6; }
+  .button_blue .large_button:disabled {
+    background-color: graytext !important;
+    color: white !important;
+    font-weight: 500 !important; }
+
+.button {
+  position: relative;
+  text-transform: uppercase;
+  text-align: center;
+  text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.75);
+  color: white;
+  cursor: pointer;
+  padding: 0 16px;
+  border: none;
+  background: #FF4081;
+  border-radius: 3px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: all 0.5s ease;
+  -webkit-transition: all 0.5s ease;
+  -moz-transition: all 0.5s ease;
+  -o-transition: all 0.5s ease;
+  font-size: 15px;
+  line-height: 32px; }
+  .button:active {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22), 0 1px 4px rgba(0, 0, 0, 0.12); }
+  .button:disabled {
+    background-color: rgba(0, 0, 0, 0.15) !important;
+    color: rgba(0, 0, 0, 0.3) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    font-weight: 600 !important; }
+  .button .large_button:disabled {
+    background-color: graytext !important;
+    color: white !important;
+    font-weight: 500 !important; }
+  .button:enabled .button_mask:hover {
+    background: rgba(255, 255, 255, 0.4); }
+
+.button_mask {
+  display: inline-block;
+  z-index: 100;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease; }
+
+.flat_button {
+  text-align: center;
+  text-transform: uppercase;
+  max-width: 110px;
+  cursor: pointer;
+  margin: 0 auto;
+  padding: 6px 16px;
+  border: none;
+  background: none !important;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
+  color: #03A9F4;
+  font-weight: 500; }
+  .flat_button:hover {
+    background: rgba(0, 0, 0, 0.15) !important; }
+  .flat_button:enabled .button_mask:hover {
+    background: rgba(255, 255, 255, 0.4); }
+
+.floating {
+  display: inline-block;
+  text-align: center;
+  color: white;
+  position: relative;
+  height: 48px;
+  width: 48px;
+  line-height: 48px;
+  transition: all 0.3s ease;
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  box-shadow: rgba(0, 0, 0, 0.15686) 0px 3px 10px, rgba(0, 0, 0, 0.22745) 0px 3px 10px;
+  background: #00bcd4; }
+  .floating:not(.button_mask) {
+    display: inline-block;
+    text-align: center;
+    height: 48px;
+    width: 48px;
+    line-height: 48px !important;
+    margin: 0 auto;
+    font-size: 48px;
+    -webkit-user-select: none; }
+  .floating:active {
+    box-shadow: rgba(0, 0, 0, 0.18824) 0px 10px 30px, rgba(0, 0, 0, 0.22745) 0px 6px 10px; }
+  .floating:disabled {
+    transition: all 0.3s ease;
+    -webkit-transition: all 0.3s ease;
+    -moz-transition: all 0.3s ease;
+    -o-transition: all 0.3s ease;
+    box-shadow: none !important;
+    background: #e0e0e0 !important; }
+  .floating.button_mask {
+    border-radius: 50%; }
+
+input[type="text"], input[type="password"] {
+  padding: 8px 2px;
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+  border-bottom: 1px rgba(177, 175, 175, 0.5) solid;
+  outline: none;
+  background: transparent;
+  transition: border-bottom-color 0.5s ease;
+  -webkit-transition: border-bottom-color 0.5s ease;
+  -moz-transition: border-bottom-color 0.5s ease;
+  -o-transition: border-bottom-color 0.5s ease; }
+  input[type="text"]:focus, input[type="password"]:focus {
+    border-bottom-color: #00BCD4; }
+  input[type="text"]:disabled, input[type="password"]:disabled {
+    border-bottom: 1px rgba(177, 175, 175, 0.8) dotted; }
+
+::-webkit-input-placeholder {
+  /* WebKit browsers */
+  color: #999; }
+
+:-moz-placeholder {
+  /* Mozilla Firefox 4 to 18 */
+  color: #999; }
+
+::-moz-placeholder {
+  /* Mozilla Firefox 19+ */
+  color: #999; }
+
+:-ms-input-placeholder {
+  /* Internet Explorer 10+ */
+  color: #999; }
+
+#gear:before {
+  content: "";
+  width: 72px;
+  height: 72px;
+  position: absolute;
+  background: url("../image/gear.png") no-repeat;
+  top: 53px;
+  right: -38px;
+  animation: rotate 0.6s linear 0s infinite; }
+
+@-webkit-keyframes rotate {
+  from {
+    -webkit-transform: rotate(0deg); }
+  to {
+    -webkit-transform: rotate(360deg); } }
+@-moz-keyframes rotate {
+  from {
+    -moz-transform: rotate(0deg); }
+  to {
+    -moz-transform: rotate(360deg); } }
+@-o-keyframes rotate {
+  from {
+    -o-transform: rotate(0deg); }
+  to {
+    -o-transform: rotate(360deg); } }
+
+/*# sourceMappingURL=common.css.map */
