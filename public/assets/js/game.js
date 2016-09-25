@@ -344,7 +344,7 @@ var socket = new Socket();
         socketuri += loc.host;
         var path = loc.pathname.substr(0,(loc.pathname.lastIndexOf("/")));
         socketuri += path;
-        socketuri += "/play";
+        socketuri += "/socket";
         if (!socket) {
             location.href = "index.html";
         } else {

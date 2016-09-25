@@ -35,7 +35,7 @@ func main() {
 	}
 	e.SetRenderer(t)
 	e.GET("/status", standard.WrapHandler(gobang.Status()))
-	e.GET("/play", standard.WrapHandler(gobang.Play()))
+	e.GET("/socket", standard.WrapHandler(gobang.Play()))
 	e.GET("/game", gobang.Game)
 	e.Run(standard.New(":8011"))
 }
