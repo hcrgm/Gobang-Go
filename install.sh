@@ -1,6 +1,8 @@
 #!/bin/bash
+set -e
+export GOPATH=`pwd`
 echo "Getting packages"
-GOPATH=`pwd` go get -u github.com/labstack/echo
+go get github.com/labstack/echo
 echo "Installing"
-GOPATH=`pwd` go install gobang
-echo "Get 'gobang' binary file at bin directory"
+go build gobang
+echo "Build success"
