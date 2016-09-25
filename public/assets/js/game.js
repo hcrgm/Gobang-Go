@@ -76,7 +76,7 @@ var socket = new Socket();
             while (msgBuffer.length != 0)
                 msgBuffer.pop();
             socket.close();
-            location.href = "index.jsp";
+            location.href = "index.html";
         },
         btn_close: function () {
             while (msgBuffer.length != 0)
@@ -112,7 +112,7 @@ var socket = new Socket();
                         "<button class='flat' id='btn_cancel'>Cancel</button>",
                         function () {
                             $("#btn_cancel").click(function () {
-                                location.href = "index.jsp";
+                                location.href = "index.html";
                             });
                         });
                 appendChat("System: Room #" + args[1] + " created");
@@ -346,7 +346,7 @@ var socket = new Socket();
         socketuri += path;
         socketuri += "/play";
         if (!socket) {
-            location.href = "index.jsp";
+            location.href = "index.html";
         } else {
             socket.connect(socketuri, listener.onConnected, listener.onMessage, listener.onError, listener.onClose);
         }
@@ -367,7 +367,7 @@ var socket = new Socket();
             }
         });
         $("#fbtn_close").click(function (e) {
-            location.href = "index.jsp";
+            location.href = "index.html";
         });
         $("#fbtn_undo").click(function (e) {
             if (turn || !started) {
