@@ -180,7 +180,7 @@ function vibrate(e, callback) {
             $("#btn_join").val("Loading...");
             $.get("ajax/join.jsp?" + val, function (data) {
                 if (parseInt(data) == 1) {
-                    location.href = "game.jsp?" + val;
+                    location.href = "game?" + val;
                 } else {
                     vibrate($("#txt_join"));
                 }
@@ -215,7 +215,7 @@ function vibrate(e, callback) {
                         (v.playing ? "Playing" : "Waiting") + "]</span>&nbsp;\n\
                                     Rounds: " + v.rounds + "&nbsp;&nbsp;\n\
                                     Steps: " + v.steps + "&nbsp;&nbsp;\n\
-                                    Watchers: " + v.watchers + "&nbsp;&nbsp;&nbsp;&nbsp;<a href='game.jsp?" + id + "'>[" + (v.playing ? "Watch" : "Join") + "]</a></li>");
+                                    Watchers: " + v.watchers + "&nbsp;&nbsp;&nbsp;&nbsp;<a href='game?" + id + "'>[" + (v.playing ? "Watch" : "Join") + "]</a></li>");
             });
             $(".id").click(function () {
                 $("#txt_join").val(this.innerHTML.replace(/^#/, ""));
@@ -239,7 +239,7 @@ function vibrate(e, callback) {
         $("#btn_create").click(function () {
             $("#btn_join").fadeOut("fast");
             $(this).children("span").text("Loading...");
-            location.href = "game.jsp?create";
+            location.href = "game?create";
         });
         $("#btn_list").click(function () {
             $("#btn_list .icon").toggleClass("turn_off").toggleClass("turn_on");

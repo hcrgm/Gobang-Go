@@ -1,0 +1,87 @@
+{{define "game"}}<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Gobang</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=yes">
+    <link rel="shortcut icon" href="assets/image/favicon.ico" type="image/x-icon" />
+    <link href="assets/style/board.css" rel="stylesheet" type="text/css">
+    <!--<script src="http://libs.baidu.com/jquery/2.0.3/jquery.min.js" onerror="document.write('<script src=js/lib/jquery.js>&lt;/script&gt;');"></script>-->
+    <script src="assets/js/lib/jquery.js"></script>
+    <script src="assets/js/lib/class.js"></script>
+    <script src="assets/js/lib/message.js"></script>
+    <script src="assets/js/socket.js"></script>
+    <!-- Not implemented yet -->
+    <!--<script>var create = <%=create%>;var roomId = "<%=(roomId == null ? "null" : roomId)%>";var username = "<%=username%>";</script>-->
+    <script src="assets/js/game.js" defer="defer" async="async"></script>
+    <script src="assets/js/ripple.js" defer="defer" async="async"></script>
+
+    <script type="text/template" id="template_wait_for_join">
+        <p>To invite a player, give the following URL:
+            <a class='can_select_text' href='[URL]' onclick='return false;'>[URL]</a><p>
+            The game will be started once any player joined the game.</p>
+        <p>Room id: #<span class='can_select_text' style='color:#009688;'>[RoomID]</span></p>
+    </script>
+    <script type="text/template" id="template_undo_request">
+        [Name] requests to undo one step
+    </script>
+    <script type="text/template" id="template_game_over_buttons">
+        <button class='flat [btnclose_style]' style='display: inline;' id='btn_close'>Close</button>
+        <button class='flat [btnback_style]' style='display: inline;' id='btn_back'>Back</button>
+    </script>
+</head>
+<body class="material_design">
+<table id="board" style="display:none;">
+    <tbody>
+    <tr class="border-top" id="row_0">
+        <td class="border-left" id="row_0_0"></td>
+        {{range loop 13}}<td id="row_0_{{.}}"></td>
+        {{end}}<td class="border-right" id="row_0_14"></td>
+    </tr>
+
+    {{range loop 13}}
+    <tr id="row_{{.}}">
+        <td class="border-left" id="row_{{.}}_0"></td>
+        {{$super:=.}}{{range loop 13}}<td id="row_{{$super}}_{{.}}"></td>
+        {{end}}<td class="border-right" id="row_{{.}}_14"></td>
+    </tr>
+    {{end}}
+
+    <tr class="border-bottom" id="row_14">
+        <td class="border-left" id="row_14_0"></td>
+        {{range loop 13}}<td id="row_14_{{.}}"></td>
+        {{end}}<td class="border-right" id="row_14_14"></td>
+    </tr>
+    </tbody>
+</table>
+<button id="fbtn_close" class="floating" style="display: none;" alt="Close">
+    <svg style="fill:#ffffff;color:#ffffff;width:32px;height:48px;" viewBox="0 0 24 24">
+        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path>
+    </svg>
+</button>
+<button id="fbtn_undo" class="floating" alt="Undo" disabled>
+    <img src="assets/image/undo.png"/>
+</button>
+<div id="bar">
+    <div class="" id="bar_white">
+        <div class="title">
+            <img src="assets/image/white.png"/><span class="title_content">White<span id="white_name"></span></span>
+        </div>
+        <div class="content">Waiting for join...</div>
+    </div>
+    <div class="" id="bar_black">
+        <div class="title">
+            <img src="assets/image/black.png"/><span class="title_content">Black<span id="black_name"></span></span>
+        </div>
+        <div class="content">Waiting for join...</div>
+    </div>
+    <div id="bar_chat" class="can_select_text">
+        <div id="bar_chat_title">Chat&nbsp;&nbsp;<a id="clear_chat" href="javascript:;" style="float:right;color:#999;">[Clear]</a></div>
+        <input type="text" id="txt_chat" placeholder="What do you want to say?"/>
+        <div id="bar_chat_content_wrapper">
+            <textarena id="bar_chat_content" class="can_select_text"></textarena>
+        </div>
+    </div>
+</div>
+</body>
+</html>{{end}}
