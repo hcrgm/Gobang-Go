@@ -15,3 +15,13 @@ func Status() websocket.Handler {
 		}
 	})
 }
+
+func Play() websocket.Handler {
+	return websocket.Handler(func (ws *websocket.Conn) {
+		err := websocket.Message.Send(ws, "err:roomId not found")
+		if err != nil {
+			log.Panic(err)
+			return
+		}
+	})
+}

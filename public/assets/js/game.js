@@ -336,11 +336,19 @@ var socket = new Socket();
     $(function () {
         $("#board").fadeIn("slow");
         appendChat("System: Connecting to server...");
-        var socketurl = location.href.replace(/^\w+:/, "ws:").replace("game.jsp", "socket").replace("?create", "");
+        var loc = window.location;
+        var socketuri = "ws://";
+        if(loc.protocol == "https:") {
+            socketuri = "wss://";
+        }
+        socketuri += loc.host;
+        var path = loc.pathname.substr(0,(loc.pathname.lastIndexOf("/")));
+        socketuri += path;
+        socketuri += "/play";
         if (!socket) {
             location.href = "index.jsp";
         } else {
-            socket.connect(socketurl, listener.onConnected, listener.onMessage, listener.onError, listener.onClose);
+            socket.connect(socketuri, listener.onConnected, listener.onMessage, listener.onError, listener.onClose);
         }
         $("td").click(function () {
             if (!started || !turn) {
