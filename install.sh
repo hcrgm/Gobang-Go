@@ -2,7 +2,7 @@
 set -e
 export GOPATH=`pwd`
 echo "Getting packages"
-go get github.com/labstack/echo
+./getpkg.sh
 echo "Installing"
 go build gobang
 echo "Build success"
