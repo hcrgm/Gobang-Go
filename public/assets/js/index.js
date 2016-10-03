@@ -204,7 +204,7 @@ function vibrate(e, callback) {
         var path = loc.pathname.substr(0,(loc.pathname.lastIndexOf("/")));
         socketuri += path;
         socketuri += "/status";
-        socket.connect(socketuri, function () {}, function (evt) {
+        var ws = socket.connect(socketuri, function () {}, function (evt) {
             list.empty();
             if (evt.data == "{}") {
                 list.parent(":visible").slideUp("slow");

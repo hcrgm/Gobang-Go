@@ -11,8 +11,7 @@
     <script src="assets/js/lib/class.js"></script>
     <script src="assets/js/lib/message.js"></script>
     <script src="assets/js/socket.js"></script>
-    <!-- Not implemented yet -->
-    <!--<script>var create = <%=create%>;var roomId = "<%=(roomId == null ? "null" : roomId)%>";var username = "<%=username%>";</script>-->
+    <script>var create = {{.Create}};var roomId = "{{.RoomId}}";var username = "{{.Username}}";</script>
     <script src="assets/js/game.js" defer="defer" async="async"></script>
     <script src="assets/js/ripple.js" defer="defer" async="async"></script>
 

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 function appendChat(msg) {
-    $("#bar_chat_content").prepend(htmlEncode(msg) + "<br/>");
+    $("#bar_chat_content").prepend(msg + "<br/>");
 }
 function setTurn(t) {
     if (t) {

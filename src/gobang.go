@@ -22,6 +22,7 @@ func main() {
 	// debug
 	e.SetDebug(true)
 	e.Use(middleware.Static("public"))
+	e.Use(middleware.Logger())
 	t := &Template{
 		templates:template.Must(template.New("").Funcs(template.FuncMap{
 			"loop": func(n int) []int {
@@ -34,8 +35,8 @@ func main() {
 		}).ParseGlob("template/*.html")),
 	}
 	e.SetRenderer(t)
-	e.GET("/status", standard.WrapHandler(gobang.Status()))
-	e.GET("/socket", standard.WrapHandler(gobang.Play()))
+	e.GET("/status", standard.WrapHandler(gobang.HandleStatusSocket()))
+	e.GET("/socket", standard.WrapHandler(gobang.HandleGameSocket()))
 	e.GET("/game", gobang.Game)
 	e.Run(standard.New(":8011"))
 }
