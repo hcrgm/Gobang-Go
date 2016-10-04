@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 	"golang.org/x/net/html"
+	"github.com/kataras/go-sessions"
 )
 
 const (
@@ -137,16 +138,14 @@ func NewRoom() *Room {
 func (room *Room) startGame(restart bool) {
 	room.steps = 0
 	if !restart {
+		room.sendToBlack([]byte("start:black"))
+		room.sendToWhite([]byte("start:white"))
 		if room.holding {
-			room.playerBlack.send <- []byte("start:black")
-			room.playerWhite.send <- []byte("start:white")
-			room.broadcastAll <- []byte("status:black:Holding...")
-			room.broadcastAll <- []byte("status:white:Waiting...")
+			room.sendToAll([]byte("status:black:Holding..."))
+			room.sendToAll([]byte("status:white:Waiting..."))
 		} else {
-			room.playerWhite.send <- []byte("start:white")
-			room.playerBlack.send <- []byte("start:black")
-			room.broadcastAll <- []byte("status:black:Waiting...")
-			room.broadcastAll <- []byte("status:white:Holding...")
+			room.sendToAll([]byte("status:black:Waiting..."))
+			room.sendToAll([]byte("status:white:Holding..."))
 		}
 	}
 	// TODO: restart
@@ -154,6 +153,30 @@ func (room *Room) startGame(restart bool) {
 	//room.broadcastAll<-[]byte("clear")
 	//room.playing = true
 	//room.rounds++
+}
+
+func (room *Room) sendToBlack(message []byte) {
+	if room.playerBlack != nil {
+		room.playerBlack.write(websocket.TextMessage, message)
+	}
+}
+
+func (room *Room) sendToWhite(message []byte) {
+	if room.playerWhite != nil {
+		room.playerWhite.write(websocket.TextMessage, message)
+	}
+}
+
+func (room *Room) sendToSpectators(message []byte) {
+	for spectator := range room.spectators {
+		spectator.send <- message
+	}
+}
+
+func (room *Room) sendToAll(message []byte) {
+	room.sendToBlack(message)
+	room.sendToWhite(message)
+	room.sendToSpectators(message)
 }
 
 func (room *Room) onQuit(client *Client) (deleteRoom bool) {
@@ -181,7 +204,7 @@ func (room *Room) onJoin(client *Client) {
 	if room.playing {
 		room.spectators[client] = true // Spectator joined
 		// Handle spectator
-		client.send <- []byte("start:spectator")
+		client.write(websocket.TextMessage, []byte("start:spectator"))
 		blackStatus := ""
 		whiteStatus := ""
 		if room.holding {
@@ -191,11 +214,11 @@ func (room *Room) onJoin(client *Client) {
 			blackStatus = "Waiting..."
 			whiteStatus = "Holding..."
 		}
-		client.send <- []byte("status:black:" + blackStatus)
-		client.send <- []byte("status:white:" + whiteStatus)
-		client.send <- []byte("join:black:" + room.playerBlack.name)
-		client.send <- []byte("join:white:" + room.playerWhite.name)
-		room.broadcastAll <- []byte("join:spectator:" + client.name)
+		client.write(websocket.TextMessage, []byte("status:black:" + blackStatus))
+		client.write(websocket.TextMessage, []byte("status:white:" + whiteStatus))
+		client.write(websocket.TextMessage, []byte("join:black:" + room.playerBlack.name))
+		client.write(websocket.TextMessage, []byte("join:white:" + room.playerWhite.name))
+		client.write(websocket.TextMessage, []byte("join:spectator:" + client.name))
 	} else if room.playerBlack == nil && room.playerWhite == nil {
 		if isBlack := rand.Int31n(2); isBlack == 1 {
 			room.playerBlack = client
@@ -231,22 +254,33 @@ func (room *Room) run() {
 				delete(roomList.rooms, room.roomId)
 			}
 		case message := <-room.broadcastAll:
-			if room.playerBlack != nil {
-				room.playerBlack.send <- message
-			}
-			if room.playerWhite != nil {
-				room.playerWhite.send <- message
-			}
-			for spectator := range room.spectators {
-				spectator.send <- message
-			}
+			room.sendToAll(message)
 		}
 	}
 }
-func serveWs(room *Room, w http.ResponseWriter, r *http.Request) {
+func serveWs(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
+		return
+	}
+	sess := sessions.Start(w, r)
+	var room *Room = nil
+	if create := sess.GetString("create"); create == "true" {
+		room = NewRoom()
+		sess.Set("create", false)
+	} else if roomId := sess.GetString("roomId"); roomId != "" {
+		if getroom, ok := roomList.rooms[roomId]; ok {
+			room = getroom
+			sess.Set("roomId", "")
+		} else {
+			ws.WriteMessage(websocket.TextMessage, []byte("err:Can't join the room:" + roomId))
+			ws.Close()
+			return
+		}
+	} else {
+		ws.WriteMessage(websocket.TextMessage, []byte("err:Internal Server Error"))
+		ws.Close()
 		return
 	}
 	client := &Client{name: "Anonymous", room: room, ws: ws, send: make(chan []byte, maxMessageSize)}

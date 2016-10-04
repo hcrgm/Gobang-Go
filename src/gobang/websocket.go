@@ -51,6 +51,6 @@ func HandleStatusSocket() http.HandlerFunc {
 func HandleGameSocket() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// TODO: room-joining
-		serveWs(NewRoom(), w, r)
+		serveWs(w, r)
 	}
 }
