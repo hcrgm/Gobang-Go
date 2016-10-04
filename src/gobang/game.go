@@ -1,12 +1,12 @@
 package gobang
 
 import (
-	"github.com/labstack/echo"
-	"net/http"
-	"strings"
 	"fmt"
 	"github.com/kataras/go-sessions"
+	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine/standard"
+	"net/http"
+	"strings"
 )
 
 func Game(c echo.Context) error {
@@ -35,8 +35,8 @@ func Game(c echo.Context) error {
 		sess.Set("create", "true")
 	}
 	return c.Render(http.StatusOK, "game", struct {
-		Create bool
-		RoomId string
+		Create   bool
+		RoomId   string
 		Username string
 	}{Create: create, RoomId: roomId, Username: "Anonymous"})
 }

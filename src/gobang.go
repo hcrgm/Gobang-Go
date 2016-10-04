@@ -3,10 +3,10 @@ package main
 import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine/standard"
+	"github.com/labstack/echo/middleware"
 	"gobang"
 	"html/template"
 	"io"
-	"github.com/labstack/echo/middleware"
 )
 
 type Template struct {
@@ -24,7 +24,7 @@ func main() {
 	e.Use(middleware.Static("public"))
 	e.Use(middleware.Logger())
 	t := &Template{
-		templates:template.Must(template.New("").Funcs(template.FuncMap{
+		templates: template.Must(template.New("").Funcs(template.FuncMap{
 			"loop": func(n int) []int {
 				slice := make([]int, n)
 				for i := 0; i < n; i++ {

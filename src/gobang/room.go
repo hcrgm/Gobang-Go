@@ -3,13 +3,15 @@ package gobang
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/kataras/go-sessions"
 	"github.com/labstack/gommon/random"
+	"golang.org/x/net/html"
 	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
-	"golang.org/x/net/html"
-	"github.com/kataras/go-sessions"
 )
 
 const (
@@ -52,7 +54,7 @@ func (c *Client) readPump() {
 			break
 		}
 		fmt.Println("mes:" + string(message))
-		c.room.broadcastAll <- []byte(html.EscapeString(string(message))) // block javascript, etc
+		c.room.onMessage(message, c)
 	}
 }
 
@@ -110,6 +112,7 @@ type Room struct {
 	spectators   map[*Client]bool
 	playing      bool
 	holding      bool // true for black, false for white
+	board        *Board
 	steps        int
 	rounds       int
 	broadcastAll chan []byte
@@ -125,6 +128,7 @@ func NewRoom() *Room {
 		spectators:   make(map[*Client]bool),
 		playing:      false,
 		holding:      false,
+		board:        NewBoard(),
 		steps:        0,
 		rounds:       0,
 		broadcastAll: make(chan []byte, maxMessageSize),
@@ -179,17 +183,24 @@ func (room *Room) sendToAll(message []byte) {
 	room.sendToSpectators(message)
 }
 
+// TODO
 func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 	if client == room.playerBlack {
 		// Black left the game
 		fmt.Println("Black left")
 		room.playerBlack = nil
-		room.broadcastAll <- []byte("chat:System:Black left")
+		room.gameOver([]byte("Black left teh game"), false)
+		room.playerWhite.ws.WriteMessage(websocket.CloseMessage, []byte("closesocket"))
+		room.playerWhite = nil
+		room.closeSpectators()
 	} else if client == room.playerWhite {
 		// White left the game
 		fmt.Println("White left")
 		room.playerWhite = nil
-		room.broadcastAll <- []byte("chat:System:White left")
+		room.gameOver([]byte("White left teh game"), false)
+		room.playerBlack.ws.WriteMessage(websocket.CloseMessage, []byte("closesocket"))
+		room.playerBlack = nil
+		room.closeSpectators()
 	} else if _, ok := room.spectators[client]; ok {
 		delete(room.spectators, client)
 	}
@@ -198,6 +209,46 @@ func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 		deleteRoom = true
 	}
 	return
+}
+
+func (room *Room) closeSpectators() {
+	for spectator := range room.spectators {
+		spectator.write(websocket.CloseMessage, []byte("closesocket"))
+		delete(room.spectators, spectator)
+	}
+	room.spectators = nil
+}
+
+func (room *Room) update(x, y int) {
+	room.updateToAll(x, y, room.board.cells[x][y])
+}
+
+func (room *Room) updateToAll(x, y, data int) {
+	room.sendToAll([]byte("update:" + strconv.Itoa(x) + ":" + strconv.Itoa(y) + ":" + strconv.Itoa(data)))
+}
+
+func (room *Room) updateToBlack(x, y int) {
+	room.sendToBlack([]byte("update:" + strconv.Itoa(x) + ":" + strconv.Itoa(y) + ":" + strconv.Itoa(room.board.cells[x][y])))
+}
+
+func (room *Room) updateToWhite(x, y int) {
+	room.sendToBlack([]byte("update:" + strconv.Itoa(x) + ":" + strconv.Itoa(y) + ":" + strconv.Itoa(room.board.cells[x][y])))
+}
+
+func (room *Room) canStart() bool {
+	return !room.playing && room.playerBlack != nil && room.playerWhite != nil
+}
+
+func (room *Room) gameOver(message []byte, canRestart bool) {
+	if !room.playing {
+		return
+	}
+	room.playing = false
+	room.sendToAll(message)
+	log.Println("GameOver:" + room.roomId + ":" + string(message))
+	if canRestart && room.canStart() {
+		room.startGame(true)
+	}
 }
 
 func (room *Room) onJoin(client *Client) {
@@ -214,11 +265,11 @@ func (room *Room) onJoin(client *Client) {
 			blackStatus = "Waiting..."
 			whiteStatus = "Holding..."
 		}
-		client.write(websocket.TextMessage, []byte("status:black:" + blackStatus))
-		client.write(websocket.TextMessage, []byte("status:white:" + whiteStatus))
-		client.write(websocket.TextMessage, []byte("join:black:" + room.playerBlack.name))
-		client.write(websocket.TextMessage, []byte("join:white:" + room.playerWhite.name))
-		client.write(websocket.TextMessage, []byte("join:spectator:" + client.name))
+		client.write(websocket.TextMessage, []byte("status:black:"+blackStatus))
+		client.write(websocket.TextMessage, []byte("status:white:"+whiteStatus))
+		client.write(websocket.TextMessage, []byte("join:black:"+room.playerBlack.name))
+		client.write(websocket.TextMessage, []byte("join:white:"+room.playerWhite.name))
+		client.write(websocket.TextMessage, []byte("join:spectator:"+client.name))
 	} else if room.playerBlack == nil && room.playerWhite == nil {
 		if isBlack := rand.Int31n(2); isBlack == 1 {
 			room.playerBlack = client
@@ -238,6 +289,106 @@ func (room *Room) onJoin(client *Client) {
 			client.send <- []byte("join:black:" + room.playerBlack.name)
 		}
 		room.startGame(false)
+	}
+}
+
+func (room *Room) onMessage(message []byte, client *Client) {
+	message = []byte(html.EscapeString(string(message))) // block javascript, etc
+	slices := strings.Split(string(message), ":")
+	if len(slices) == 0 {
+		return
+	}
+	if client == room.playerBlack || client == room.playerWhite {
+		switch slices[0] {
+		case "update":
+			if len(slices) < 4 {
+				log.Println("Bad update message")
+				return
+			}
+			x, err1 := strconv.Atoi(slices[1])
+			y, err2 := strconv.Atoi(slices[2])
+			data, err3 := strconv.Atoi(slices[3])
+			if err1 != nil || err2 != nil || err3 != nil {
+				log.Println("Parse error")
+				return
+			}
+			if x < 0 || x > 14 || y < 0 || y > 14 || !CheckData(data) {
+				log.Println("Bad coordinate")
+				return
+			}
+			if room.board.cells[x][y] != EMPTY {
+				log.Println("Cannot refill the cell")
+				client.write(websocket.TextMessage, []byte("update:"+strconv.Itoa(x)+":"+strconv.Itoa(y)+":"+strconv.Itoa(room.board.cells[x][y])))
+				return
+			}
+			color := room.board.cells[x][y]
+			if room.holding {
+				if client == room.playerBlack {
+					color = BLACK
+				} else {
+					log.Println("Holder is black")
+					room.updateToWhite(x, y)
+					return
+				}
+			} else {
+				if client == room.playerWhite {
+					color = WHITE
+				} else {
+					log.Println("Holder is white")
+					room.updateToBlack(x, y)
+					return
+				}
+			}
+			room.steps++
+			room.board.cells[x][y] = color
+			room.board.lastStepX = x
+			room.board.lastStepY = y
+			room.update(x, y)
+			room.holding = !room.holding
+			turnTo := ""
+			if room.holding {
+				turnTo = "WHITE"
+			} else {
+				turnTo = "BLACK"
+			}
+			room.sendToAll([]byte("turn:" + turnTo))
+			if room.board.checkWin(x, y, room.board.cells[x][y], color) {
+				room.gameOver([]byte(GetColor(color)+" win!"), true)
+			}
+		case "status":
+			room.sendToAll(message)
+		case "chat":
+			if len(slices) < 3 {
+				return
+			}
+			if slices[1] != client.name {
+				return
+			}
+			chatMessage := ""
+			for i := 2; i < len(slices); i++ {
+				chatMessage += slices[i]
+			}
+			if len(chatMessage) > 50 {
+				client.write(websocket.TextMessage, []byte("chat:System:Too long!"))
+				return
+			}
+			prefix := "[S]"
+			if client == room.playerBlack {
+				prefix = "[B]"
+			} else if client == room.playerWhite {
+				prefix = "[W]"
+			}
+			room.broadcastAll <- []byte("chat:" + prefix + client.name + ":" + chatMessage)
+		case "undo":
+			// TODO:Not implemented yet
+			return
+		case "accept":
+			// TODO:Not implemented yet
+			return
+		case "deny":
+			// TODO:Not implemented yet
+			return
+		}
 	}
 }
 
@@ -274,7 +425,7 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 			room = getroom
 			sess.Set("roomId", "")
 		} else {
-			ws.WriteMessage(websocket.TextMessage, []byte("err:Can't join the room:" + roomId))
+			ws.WriteMessage(websocket.TextMessage, []byte("err:Can't join the room:"+roomId))
 			ws.Close()
 			return
 		}

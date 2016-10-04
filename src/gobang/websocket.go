@@ -1,12 +1,12 @@
 package gobang
 
 import (
-	"github.com/gorilla/websocket"
-	"net/http"
-	"log"
-	"time"
 	"github.com/bitly/go-simplejson"
+	"github.com/gorilla/websocket"
+	"log"
 	"math/rand"
+	"net/http"
+	"time"
 )
 
 var (
@@ -36,7 +36,7 @@ func HandleStatusSocket() http.HandlerFunc {
 						roomStatus.Set("owner", "Anonymous") //TODO
 						rooms.Set(roomId, roomStatus)
 					}
-					json , err := rooms.Encode()
+					json, err := rooms.Encode()
 					if err != nil {
 						log.Println(err)
 						return
