@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,15 +23,22 @@ const (
 )
 
 type Client struct {
-	name string
-	room *Room
-	ws   *websocket.Conn
-	send chan []byte
+	name  string
+	room  *Room
+	ws    *websocket.Conn
+	send  chan []byte
+	mutex sync.Mutex
 }
 
 func (c *Client) write(mt int, payload []byte) error {
+	c.mutex.Lock()
 	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
+	defer c.mutex.Unlock()
 	return c.ws.WriteMessage(mt, payload)
+}
+
+func (c *Client) writeTextMessage(message []byte) error {
+	return c.write(websocket.TextMessage, message)
 }
 
 func (c *Client) readPump() {
@@ -170,13 +178,13 @@ func (room *Room) startGame(restart bool) {
 
 func (room *Room) sendToBlack(message []byte) {
 	if room.playerBlack != nil {
-		room.playerBlack.write(websocket.TextMessage, message)
+		room.playerBlack.writeTextMessage(message)
 	}
 }
 
 func (room *Room) sendToWhite(message []byte) {
 	if room.playerWhite != nil {
-		room.playerWhite.write(websocket.TextMessage, message)
+		room.playerWhite.writeTextMessage(message)
 	}
 }
 
@@ -199,7 +207,7 @@ func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 		fmt.Println("Black left")
 		room.playerBlack = nil
 		room.gameOver("Black left the game", false)
-		room.playerWhite.ws.WriteMessage(websocket.CloseMessage, []byte("closesocket"))
+		room.playerWhite.write(websocket.CloseMessage, []byte("closesocket"))
 		room.playerWhite = nil
 		room.closeSpectators()
 	} else if client == room.playerWhite {
@@ -207,7 +215,7 @@ func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 		fmt.Println("White left")
 		room.playerWhite = nil
 		room.gameOver("White left the game", false)
-		room.playerBlack.ws.WriteMessage(websocket.CloseMessage, []byte("closesocket"))
+		room.playerBlack.write(websocket.CloseMessage, []byte("closesocket"))
 		room.playerBlack = nil
 		room.closeSpectators()
 	} else if _, ok := room.spectators[client]; ok {
@@ -264,7 +272,7 @@ func (room *Room) onJoin(client *Client) {
 	if room.playing {
 		room.spectators[client] = true // Spectator joined
 		// Handle spectator
-		client.write(websocket.TextMessage, []byte("start:spectator"))
+		client.writeTextMessage([]byte("start:spectator"))
 		blackStatus := ""
 		whiteStatus := ""
 		if room.holding {
@@ -274,11 +282,11 @@ func (room *Room) onJoin(client *Client) {
 			blackStatus = "Waiting..."
 			whiteStatus = "Holding..."
 		}
-		client.write(websocket.TextMessage, []byte("status:black:"+blackStatus))
-		client.write(websocket.TextMessage, []byte("status:white:"+whiteStatus))
-		client.write(websocket.TextMessage, []byte("join:black:"+room.playerBlack.name))
-		client.write(websocket.TextMessage, []byte("join:white:"+room.playerWhite.name))
-		client.write(websocket.TextMessage, []byte("join:spectator:"+client.name))
+		client.writeTextMessage([]byte("status:black:" + blackStatus))
+		client.writeTextMessage([]byte("status:white:" + whiteStatus))
+		client.writeTextMessage([]byte("join:black:" + room.playerBlack.name))
+		client.writeTextMessage([]byte("join:white:" + room.playerWhite.name))
+		client.writeTextMessage([]byte("join:spectator:" + client.name))
 	} else if room.playerBlack == nil && room.playerWhite == nil {
 		if isBlack := rand.Int31n(2); isBlack == 1 {
 			room.playerBlack = client
@@ -332,7 +340,7 @@ func (room *Room) onMessage(message []byte, client *Client) {
 			}
 			if room.board.cells[x][y] != EMPTY {
 				log.Println("Cannot refill the cell")
-				client.write(websocket.TextMessage, []byte("update:"+strconv.Itoa(x)+":"+strconv.Itoa(y)+":"+strconv.Itoa(room.board.cells[x][y])))
+				client.writeTextMessage([]byte("update:" + strconv.Itoa(x) + ":" + strconv.Itoa(y) + ":" + strconv.Itoa(room.board.cells[x][y])))
 				return
 			}
 			color := room.board.cells[x][y]
@@ -383,7 +391,7 @@ func (room *Room) onMessage(message []byte, client *Client) {
 				chatMessage += slices[i]
 			}
 			if len(chatMessage) > 50 {
-				client.write(websocket.TextMessage, []byte("chat:System:Too long!"))
+				client.writeTextMessage([]byte("chat:System:Too long!"))
 				return
 			}
 			prefix := "[S]"
