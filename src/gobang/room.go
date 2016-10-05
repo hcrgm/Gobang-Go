@@ -207,7 +207,9 @@ func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 		fmt.Println("Black left")
 		room.playerBlack = nil
 		room.gameOver("Black left the game", false)
-		room.playerWhite.write(websocket.CloseMessage, []byte("closesocket"))
+		if room.playerWhite != nil {
+			room.playerWhite.write(websocket.CloseMessage, []byte("closesocket"))
+		}
 		room.playerWhite = nil
 		room.closeSpectators()
 	} else if client == room.playerWhite {
@@ -215,7 +217,9 @@ func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 		fmt.Println("White left")
 		room.playerWhite = nil
 		room.gameOver("White left the game", false)
-		room.playerBlack.write(websocket.CloseMessage, []byte("closesocket"))
+		if room.playerBlack != nil {
+			room.playerBlack.write(websocket.CloseMessage, []byte("closesocket"))
+		}
 		room.playerBlack = nil
 		room.closeSpectators()
 	} else if _, ok := room.spectators[client]; ok {

@@ -21,34 +21,41 @@ func HandleStatusSocket() http.HandlerFunc {
 		}
 		ticker := time.NewTicker(3 * time.Second)
 		timer := time.NewTimer(time.Second)
-		go func() {
-			update := func() {
-				rooms := simplejson.New()
-				roomStatus := simplejson.New()
-				for roomId, room := range roomList.rooms {
-					roomStatus.Set("playing", room.playing)
-					roomStatus.Set("rounds", room.rounds)
-					roomStatus.Set("steps", room.steps)
-					roomStatus.Set("watchers", len(room.spectators))
-					roomStatus.Set("owner", "Anonymous") //TODO
-					rooms.Set(roomId, roomStatus)
-				}
-				json, err := rooms.Encode()
-				if err != nil {
-					log.Println(err)
+		update := func() error {
+			rooms := simplejson.New()
+			roomStatus := simplejson.New()
+			for roomId, room := range roomList.rooms {
+				roomStatus.Set("playing", room.playing)
+				roomStatus.Set("rounds", room.rounds)
+				roomStatus.Set("steps", room.steps)
+				roomStatus.Set("watchers", len(room.spectators))
+				roomStatus.Set("owner", "Anonymous") //TODO
+				rooms.Set(roomId, roomStatus)
+			}
+			json, err := rooms.Encode()
+			if err != nil {
+				log.Println(err)
+				json = []byte("{}")
+			}
+			return ws.WriteMessage(websocket.TextMessage, json)
+		}
+		defer func() {
+			ticker.Stop()
+			timer.Stop()
+			ws.Close()
+		}()
+		for {
+			select {
+			case <-timer.C:
+				if err := update(); err != nil {
 					return
 				}
-				ws.WriteMessage(websocket.TextMessage, json)
-			}
-			for {
-				select {
-				case <-timer.C:
-					update()
-				case <-ticker.C:
-					update()
+			case <-ticker.C:
+				if err := update(); err != nil {
+					return
 				}
 			}
-		}()
+		}
 	}
 }
 
