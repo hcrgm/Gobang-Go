@@ -7,20 +7,66 @@ import (
 	"gobang"
 	"html/template"
 	"io"
+	"io/ioutil"
+	"github.com/bitly/go-simplejson"
+	"net/http"
+	"strconv"
+	"github.com/kataras/go-sessions"
+	"fmt"
+	"crypto/sha1"
+	"github.com/labstack/gommon/random"
+	"strings"
+	"net/url"
+	"encoding/base64"
 )
 
 type Template struct {
 	templates *template.Template
 }
 
+type Config struct {
+	debug bool
+	port int
+	useOAuth bool
+	github *OAuthConfig
+}
+
+type OAuthConfig struct {
+	client_id string
+	client_secret string
+}
+
+var config *Config
+
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
 func main() {
+	configFile, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		panic(err)
+	}
+	json, err := simplejson.NewJson(configFile)
+	if err != nil {
+		panic(err)
+	}
+	config = &Config{
+		debug: json.Get("debug").MustBool(false),
+		port: json.Get("port").MustInt(8011),
+		useOAuth: json.Get("useOAuth").MustBool(false),
+		github: &OAuthConfig{
+			client_id: json.GetPath("github").Get("client_id").MustString(""),
+			client_secret: json.GetPath("github").Get("client_secret").MustString(""),
+		},
+	}
+	if len(config.github.client_id) == 0 && len(config.github.client_secret) == 0 {
+		panic("Wrong config:Github OAuth")
+	}
 	e := echo.New()
 	// debug
-	e.SetDebug(true)
+	e.SetDebug(config.debug)
+	e.Use(middleware.Gzip())
 	e.Use(middleware.Static("public"))
 	e.Use(middleware.Logger())
 	t := &Template{
@@ -38,5 +84,87 @@ func main() {
 	e.GET("/status", standard.WrapHandler(gobang.HandleStatusSocket()))
 	e.GET("/socket", standard.WrapHandler(gobang.HandleGameSocket()))
 	e.GET("/game", gobang.Game)
-	e.Run(standard.New(":8011"))
+	e.Any("/login", Login)
+	if err := e.Run(standard.New(":" + strconv.Itoa(config.port))); err != nil {
+		panic(err)
+	}
+}
+
+func Login(c echo.Context) error {
+	response := ""
+	w := c.Response().(*standard.Response).ResponseWriter
+	r := c.Request().(*standard.Request).Request
+	sess := sessions.Start(w, r)
+	switch c.FormValue("action") {
+	case "logout":
+		sess.Delete("name")
+		fallthrough
+	case "info":
+		if !config.useOAuth {
+			response = `[<b style="color:#f44336">Login function not enabled</b>]`
+		} else {
+			username := "Anonymous"
+			signBtn := "Sign in"
+			if name := sess.GetString("name"); len(name) != 0 {
+				username = name
+				signBtn = "Sign out"
+			}
+			response = fmt.Sprintf(`<span id="username">%s</span>&nbsp;&nbsp;<a id="btn_login">[%s]</a><script>$("#btn_login").one("click", login);</script>`, username, signBtn)
+		}
+	case "oauth":
+		sha := sha1.New()
+		sha.Write([]byte(random.String(16)))
+		state := base64.URLEncoding.EncodeToString(sha.Sum(nil))
+		sess.Set("state", state)
+		return c.Redirect(http.StatusMovedPermanently, "https://github.com/login/oauth/authorize?client_id=" + config.github.client_id + "&state=" + state)
+	case "oauth-callback":
+		if len(c.FormValue("code")) == 0 || len(c.FormValue("state")) == 0 || sess.GetString("state") != c.FormValue("state") {
+			return c.HTML(http.StatusBadRequest, "Bad Requesst")
+		}
+		if code := c.FormValue("code"); len("code") != 0 {
+			v := url.Values{}
+			v.Set("client_id", config.github.client_id)
+			v.Set("client_secret", config.github.client_secret)
+			v.Set("code", code)
+			req, err := http.NewRequest("POST", "https://github.com/login/oauth/access_token", strings.NewReader(v.Encode()))
+			if err != nil {
+				return c.HTML(http.StatusInternalServerError, err.Error())
+			}
+			req.Header.Add("Accept", "application/json")
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			response, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return c.HTML(http.StatusInternalServerError, "Cannot send the request to GitHub")
+			}
+			json, err := simplejson.NewFromReader(response.Body)
+			if err != nil {
+				return c.HTML(http.StatusInternalServerError, "Cannot parse the result")
+			}
+			accessToken := json.Get("access_token").MustString("")
+			if len(accessToken) == 0 {
+				return c.HTML(http.StatusInternalServerError, "Cannot get the access token")
+			}
+			v = url.Values{}
+			v.Set("access_token", accessToken)
+			req, err = http.NewRequest("GET", "https://api.github.com/user" + accessToken, strings.NewReader(v.Encode()))
+			if err != nil {
+				return c.HTML(http.StatusInternalServerError, err.Error())
+			}
+			response, err = http.DefaultClient.Do(req)
+			if err != nil {
+				return c.HTML(http.StatusInternalServerError, "Cannot send the request to GitHub")
+			}
+			json, err = simplejson.NewFromReader(response.Body)
+			if err != nil {
+				return c.HTML(http.StatusInternalServerError, "Cannot parse the result")
+			}
+			name := json.Get("name").MustString("")
+			if len(accessToken) == 0 {
+				return c.HTML(http.StatusInternalServerError, "Cannot get the name")
+			}
+			sess.Set("name", name)
+			return c.Redirect(http.StatusMovedPermanently, "index.html")
+		}
+	}
+	return c.HTML(http.StatusOK, response)
 }

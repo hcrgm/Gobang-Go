@@ -65,34 +65,14 @@ function asyncLoadScript(url, callback) {
 function login() {
     var finished = false;
     if ($("#username").html() == "Anonymous") {
-        setTimeout(function () {
-            if (!finished) {
-                $("#l_loading").fadeIn("slow");
-            }
-        }, 200);
-        if ($("#login_form")) {
-            asyncLoadScript(["assets/js/lib/message.js", "assets/js/lib/jquery.md5.js"], function () {
-                $("#login").load("ajax/login.jsp", show);
-            });
-        } else
-            show();
-        function show() {
-            finished = true;
-            $("#l_loading").fadeOut("slow");
-            $("#btn_login").html("[Cancel]").one("click", function () {
-                $("#login").slideUp("slow");
-                $("#btn_login").html("[Sign in]").one("click", login);
-                $("#actions").slideDown("slow");
-            });
-            $("#login").slideDown("slow");
-        }
+        location.href = "login?action=oauth";
     } else {
         setTimeout(function () {
             if (!finished) {
                 $("#username_arena").text("Loading...");
             }
         }, 200);
-        $("#username_arena").load("ajax/login.jsp", {action: "loginout"}, function () {
+        $("#username_arena").load("login", {action: "loginout"}, function () {
             finished = true;
             $("#login,#l_loading").fadeOut("slow");
         });
@@ -245,7 +225,7 @@ function vibrate(e, callback) {
             $("#btn_list .icon").toggleClass("turn_off").toggleClass("turn_on");
         });
         $("#btn_join").one("click", showJoin);
-        $("#username_arena").load("ajax/login.jsp", {action: "info"});
+        $("#username_arena").load("login", {action: "info"});
         if (location.hash == "#join") {
             showJoin();
         }
