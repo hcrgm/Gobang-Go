@@ -4,7 +4,6 @@ import (
 	"github.com/bitly/go-simplejson"
 	"github.com/gorilla/websocket"
 	"log"
-	"math/rand"
 	"net/http"
 	"time"
 )
@@ -21,27 +20,32 @@ func HandleStatusSocket() http.HandlerFunc {
 			return
 		}
 		ticker := time.NewTicker(3 * time.Second)
+		timer := time.NewTimer(time.Second)
 		go func() {
+			update := func() {
+				rooms := simplejson.New()
+				roomStatus := simplejson.New()
+				for roomId, room := range roomList.rooms {
+					roomStatus.Set("playing", room.playing)
+					roomStatus.Set("rounds", room.rounds)
+					roomStatus.Set("steps", room.steps)
+					roomStatus.Set("watchers", len(room.spectators))
+					roomStatus.Set("owner", "Anonymous") //TODO
+					rooms.Set(roomId, roomStatus)
+				}
+				json, err := rooms.Encode()
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				ws.WriteMessage(websocket.TextMessage, json)
+			}
 			for {
 				select {
+				case <-timer.C:
+					update()
 				case <-ticker.C:
-					rooms := simplejson.New()
-					roomStatus := simplejson.New()
-					for roomId, room := range roomList.rooms {
-						roomStatus.Set("playing", room.playing)
-						roomStatus.Set("rounds", room.rounds)
-						//roomStatus.Set("steps", room.steps)
-						roomStatus.Set("steps", rand.Intn(100)) // TODO:test
-						roomStatus.Set("watchers", len(room.spectators))
-						roomStatus.Set("owner", "Anonymous") //TODO
-						rooms.Set(roomId, roomStatus)
-					}
-					json, err := rooms.Encode()
-					if err != nil {
-						log.Println(err)
-						return
-					}
-					ws.WriteMessage(websocket.TextMessage, json)
+					update()
 				}
 			}
 		}()

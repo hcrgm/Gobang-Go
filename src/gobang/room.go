@@ -140,23 +140,32 @@ func NewRoom() *Room {
 }
 
 func (room *Room) startGame(restart bool) {
+	if !room.canStart() {
+		return
+	}
 	room.steps = 0
 	if !restart {
-		room.sendToBlack([]byte("start:black"))
-		room.sendToWhite([]byte("start:white"))
 		if room.holding {
+			room.sendToBlack([]byte("start:black"))
+			room.sendToWhite([]byte("start:white"))
 			room.sendToAll([]byte("status:black:Holding..."))
 			room.sendToAll([]byte("status:white:Waiting..."))
 		} else {
+			room.sendToBlack([]byte("start:white"))
+			room.sendToWhite([]byte("start:black"))
 			room.sendToAll([]byte("status:black:Waiting..."))
 			room.sendToAll([]byte("status:white:Holding..."))
 		}
 	}
-	// TODO: restart
+	if room.holding {
+		room.sendToAll([]byte("turn:BLACK"))
+	} else {
+		room.sendToAll([]byte("turn:WHITE"))
+	}
+	room.sendToAll([]byte("clear"))
 	// TODO: clear cells
-	//room.broadcastAll<-[]byte("clear")
-	//room.playing = true
-	//room.rounds++
+	room.playing = true
+	room.rounds++
 }
 
 func (room *Room) sendToBlack(message []byte) {
@@ -189,7 +198,7 @@ func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 		// Black left the game
 		fmt.Println("Black left")
 		room.playerBlack = nil
-		room.gameOver([]byte("Black left teh game"), false)
+		room.gameOver("Black left the game", false)
 		room.playerWhite.ws.WriteMessage(websocket.CloseMessage, []byte("closesocket"))
 		room.playerWhite = nil
 		room.closeSpectators()
@@ -197,7 +206,7 @@ func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 		// White left the game
 		fmt.Println("White left")
 		room.playerWhite = nil
-		room.gameOver([]byte("White left teh game"), false)
+		room.gameOver("White left the game", false)
 		room.playerBlack.ws.WriteMessage(websocket.CloseMessage, []byte("closesocket"))
 		room.playerBlack = nil
 		room.closeSpectators()
@@ -239,12 +248,12 @@ func (room *Room) canStart() bool {
 	return !room.playing && room.playerBlack != nil && room.playerWhite != nil
 }
 
-func (room *Room) gameOver(message []byte, canRestart bool) {
+func (room *Room) gameOver(message string, canRestart bool) {
 	if !room.playing {
 		return
 	}
 	room.playing = false
-	room.sendToAll(message)
+	room.sendToAll([]byte("gameover:" + message))
 	log.Println("GameOver:" + room.roomId + ":" + string(message))
 	if canRestart && room.canStart() {
 		room.startGame(true)
@@ -274,19 +283,24 @@ func (room *Room) onJoin(client *Client) {
 		if isBlack := rand.Int31n(2); isBlack == 1 {
 			room.playerBlack = client
 			room.holding = true
+			log.Println("Joined as black")
 		} else {
 			room.playerWhite = client
+			log.Println("Joined as white")
 		}
 		client.send <- []byte("room:" + room.roomId)
 	} else {
 		if room.playerBlack == nil {
 			room.playerBlack = client
+			room.holding = true
 			room.broadcastAll <- []byte("join:black:" + client.name)
 			client.send <- []byte("join:white:" + room.playerWhite.name)
+			log.Println("Joined as black")
 		} else if room.playerWhite == nil {
 			room.playerWhite = client
 			room.broadcastAll <- []byte("join:white:" + client.name)
 			client.send <- []byte("join:black:" + room.playerBlack.name)
+			log.Println("Joined as white")
 		}
 		room.startGame(false)
 	}
@@ -347,13 +361,13 @@ func (room *Room) onMessage(message []byte, client *Client) {
 			room.holding = !room.holding
 			turnTo := ""
 			if room.holding {
-				turnTo = "WHITE"
-			} else {
 				turnTo = "BLACK"
+			} else {
+				turnTo = "WHITE"
 			}
 			room.sendToAll([]byte("turn:" + turnTo))
 			if room.board.checkWin(x, y, room.board.cells[x][y], color) {
-				room.gameOver([]byte(GetColor(color)+" win!"), true)
+				room.gameOver(GetColor(color)+" win!", true)
 			}
 		case "status":
 			room.sendToAll(message)
