@@ -324,6 +324,29 @@ func (room *Room) onMessage(message []byte, client *Client) {
 	if len(slices) == 0 {
 		return
 	}
+	if slices[0] == "chat" {
+		if len(slices) < 3 {
+			return
+		}
+		if slices[1] != client.name {
+			return
+		}
+		chatMessage := ""
+		for i := 2; i < len(slices); i++ {
+			chatMessage += slices[i]
+		}
+		if len(chatMessage) > 50 {
+			client.writeTextMessage([]byte("chat:System:Too long!"))
+			return
+		}
+		prefix := "[S]"
+		if client == room.playerBlack {
+			prefix = "[B]"
+		} else if client == room.playerWhite {
+			prefix = "[W]"
+		}
+		room.broadcastAll <- []byte("chat:" + prefix + client.name + ":" + chatMessage)
+	}
 	if client == room.playerBlack || client == room.playerWhite {
 		switch slices[0] {
 		case "update":
@@ -383,28 +406,6 @@ func (room *Room) onMessage(message []byte, client *Client) {
 			}
 		case "status":
 			room.sendToAll(message)
-		case "chat":
-			if len(slices) < 3 {
-				return
-			}
-			if slices[1] != client.name {
-				return
-			}
-			chatMessage := ""
-			for i := 2; i < len(slices); i++ {
-				chatMessage += slices[i]
-			}
-			if len(chatMessage) > 50 {
-				client.writeTextMessage([]byte("chat:System:Too long!"))
-				return
-			}
-			prefix := "[S]"
-			if client == room.playerBlack {
-				prefix = "[B]"
-			} else if client == room.playerWhite {
-				prefix = "[W]"
-			}
-			room.broadcastAll <- []byte("chat:" + prefix + client.name + ":" + chatMessage)
 		case "undo":
 			// TODO:Not implemented yet
 			return
