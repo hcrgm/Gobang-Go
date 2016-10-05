@@ -1,7 +1,6 @@
 package gobang
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/kataras/go-sessions"
 	"github.com/labstack/gommon/random"
@@ -61,7 +60,7 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		fmt.Println("mes:" + string(message))
+		log.Println("mes:" + string(message))
 		c.room.onMessage(message, c)
 	}
 }
@@ -160,7 +159,8 @@ func (room *Room) startGame(restart bool) {
 		room.sendToAll([]byte("turn:WHITE"))
 	}
 	room.sendToAll([]byte("clear"))
-	// TODO: clear cells
+	room.updateAllMap(EMPTY, room.playerBlack, room.playerWhite)
+	room.sendToAll([]byte("clear"))
 	room.playing = true
 	room.rounds++
 }
@@ -189,11 +189,10 @@ func (room *Room) sendToAll(message []byte) {
 	room.sendToSpectators(message)
 }
 
-// TODO
 func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 	if client == room.playerBlack {
 		// Black left the game
-		fmt.Println("Black left")
+		log.Println("Black left")
 		room.playerBlack = nil
 		room.gameOver("Black left the game", false)
 		if room.playerWhite != nil {
@@ -203,7 +202,7 @@ func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 		room.closeSpectators()
 	} else if client == room.playerWhite {
 		// White left the game
-		fmt.Println("White left")
+		log.Println("White left")
 		room.playerWhite = nil
 		room.gameOver("White left the game", false)
 		if room.playerBlack != nil {
@@ -245,6 +244,21 @@ func (room *Room) updateToWhite(x, y int) {
 	room.sendToBlack([]byte("update:" + strconv.Itoa(x) + ":" + strconv.Itoa(y) + ":" + strconv.Itoa(room.board.cells[x][y])))
 }
 
+func (room *Room) updateAllMap(nc int, clients ...*Client) {
+	for x := 0; x < len(room.board.cells); x++ {
+		for y := 0; y < len(room.board.cells[0]); y++ {
+			if nc != -1 {
+				room.board.cells[x][y] = nc
+			}
+			for _, client := range clients {
+				if err := client.writeTextMessage([]byte("update:" + strconv.Itoa(x) + ":" + strconv.Itoa(y) + ":" + strconv.Itoa(room.board.cells[x][y]))); err != nil {
+					return
+				}
+			}
+		}
+	}
+}
+
 func (room *Room) canStart() bool {
 	return !room.playing && room.playerBlack != nil && room.playerWhite != nil
 }
@@ -264,8 +278,8 @@ func (room *Room) gameOver(message string, canRestart bool) {
 func (room *Room) onJoin(client *Client) {
 	if room.playing {
 		room.spectators[client] = true // Spectator joined
-		// Handle spectator
 		client.writeTextMessage([]byte("start:spectator"))
+		room.updateAllMap(-1, client)
 		blackStatus := ""
 		whiteStatus := ""
 		if room.holding {
@@ -279,7 +293,7 @@ func (room *Room) onJoin(client *Client) {
 		client.writeTextMessage([]byte("status:white:" + whiteStatus))
 		client.writeTextMessage([]byte("join:black:" + room.playerBlack.name))
 		client.writeTextMessage([]byte("join:white:" + room.playerWhite.name))
-		client.writeTextMessage([]byte("join:spectator:" + client.name))
+		room.sendToAll([]byte("join:spectator:" + client.name))
 	} else if room.playerBlack == nil && room.playerWhite == nil {
 		if isBlack := rand.Int31n(2); isBlack == 1 {
 			room.playerBlack = client
@@ -412,12 +426,12 @@ func (room *Room) run() {
 	for {
 		select {
 		case client := <-room.register:
-			fmt.Println("Register a user")
+			log.Println("Register a user")
 			room.onJoin(client)
 		case client := <-room.unregister:
 			// Check if we can delete the room
 			if room.onQuit(client) {
-				fmt.Println("deleting room")
+				log.Println("deleting room")
 				delete(roomList.rooms, room.roomId)
 			}
 		case message := <-room.broadcastAll:
