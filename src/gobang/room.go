@@ -82,19 +82,8 @@ func (c *Client) writePump() {
 			}
 
 			c.ws.SetWriteDeadline(time.Now().Add(writeWait))
-			w, err := c.ws.NextWriter(websocket.TextMessage)
+			err := c.writeTextMessage(message)
 			if err != nil {
-				return
-			}
-			w.Write(message)
-
-			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write(<-c.send)
-			}
-
-			if err := w.Close(); err != nil {
 				return
 			}
 		case <-ticker.C:
@@ -190,7 +179,7 @@ func (room *Room) sendToWhite(message []byte) {
 
 func (room *Room) sendToSpectators(message []byte) {
 	for spectator := range room.spectators {
-		spectator.send <- message
+		spectator.writeTextMessage(message)
 	}
 }
 
