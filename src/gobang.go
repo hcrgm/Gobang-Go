@@ -60,7 +60,7 @@ func main() {
 		},
 	}
 	if config.useOAuth {
-		if len(config.github.client_id) == 0 && len(config.github.client_secret) == 0 {
+		if len(config.github.client_id) == 0 || len(config.github.client_secret) == 0 {
 			panic("Wrong config:Github OAuth")
 		}
 	}
