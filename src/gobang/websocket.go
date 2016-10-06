@@ -29,7 +29,7 @@ func HandleStatusSocket() http.HandlerFunc {
 				roomStatus.Set("rounds", room.rounds)
 				roomStatus.Set("steps", room.steps)
 				roomStatus.Set("watchers", len(room.spectators))
-				roomStatus.Set("owner", "Anonymous") //TODO
+				roomStatus.Set("owner", room.owner.name)
 				rooms.Set(roomId, roomStatus)
 			}
 			json, err := rooms.Encode()
@@ -61,7 +61,6 @@ func HandleStatusSocket() http.HandlerFunc {
 
 func HandleGameSocket() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: room-joining
 		serveWs(w, r)
 	}
 }

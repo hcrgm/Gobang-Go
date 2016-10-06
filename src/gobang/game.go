@@ -34,9 +34,13 @@ func Game(c echo.Context) error {
 	if create {
 		sess.Set("create", "true")
 	}
+	name := "Anonymous"
+	if len(sess.GetString("name")) != 0 {
+		name = sess.GetString("name")
+	}
 	return c.Render(http.StatusOK, "game", struct {
 		Create   bool
 		RoomId   string
 		Username string
-	}{Create: create, RoomId: roomId, Username: "Anonymous"})
+	}{Create: create, RoomId: roomId, Username: name})
 }

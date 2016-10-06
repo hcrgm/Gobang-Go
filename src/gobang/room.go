@@ -29,6 +29,10 @@ type Client struct {
 	mutex sync.Mutex
 }
 
+func NewClient(name string, room *Room, ws *websocket.Conn) *Client {
+	return &Client{name: name, room: room, ws: ws, send: make(chan []byte)}
+}
+
 func (c *Client) write(mt int, payload []byte) error {
 	c.mutex.Lock()
 	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
@@ -41,7 +45,6 @@ func (c *Client) writeTextMessage(message []byte) error {
 }
 
 func (c *Client) readPump() {
-	// TODO: chat
 	defer func() {
 		c.room.unregister <- c
 		c.ws.Close()
@@ -103,6 +106,7 @@ var roomList = &RoomList{
 
 type Room struct {
 	roomId       string
+	owner        *Client
 	playerBlack  *Client
 	playerWhite  *Client
 	spectators   map[*Client]bool
@@ -127,9 +131,9 @@ func NewRoom() *Room {
 		board:        NewBoard(),
 		steps:        0,
 		rounds:       0,
-		broadcastAll: make(chan []byte, maxMessageSize),
-		register:     make(chan *Client, maxMessageSize),
-		unregister:   make(chan *Client, maxMessageSize),
+		broadcastAll: make(chan []byte),
+		register:     make(chan *Client),
+		unregister:   make(chan *Client),
 	}
 	roomList.rooms[room.roomId] = room
 	return room
@@ -447,13 +451,18 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 	}
 	sess := sessions.Start(w, r)
 	var room *Room = nil
+	name := "Anonymous"
+	if len(sess.GetString("name")) != 0 {
+		name = sess.GetString("name")
+	}
 	if create := sess.GetString("create"); create == "true" {
 		room = NewRoom()
-		sess.Set("create", false)
+		room.owner = NewClient(name, room, ws)
+		sess.Delete("create")
 	} else if roomId := sess.GetString("roomId"); roomId != "" {
 		if getroom, ok := roomList.rooms[roomId]; ok {
 			room = getroom
-			sess.Set("roomId", "")
+			sess.Delete("roomId")
 		} else {
 			ws.WriteMessage(websocket.TextMessage, []byte("err:Can't join the room:"+roomId))
 			ws.Close()
@@ -464,9 +473,9 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 		ws.Close()
 		return
 	}
-	client := &Client{name: "Anonymous", room: room, ws: ws, send: make(chan []byte, maxMessageSize)}
-	client.room.register <- client
+	client := NewClient(name, room, ws)
 	go room.run()
+	client.room.register <- client
 	go client.writePump()
 	client.readPump()
 }
