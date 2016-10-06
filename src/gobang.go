@@ -17,7 +17,6 @@ import (
 	"github.com/labstack/gommon/random"
 	"strings"
 	"net/url"
-	"encoding/base64"
 )
 
 type Template struct {
