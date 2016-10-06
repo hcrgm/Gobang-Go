@@ -439,8 +439,8 @@ func (room *Room) onMessage(message []byte, client *Client) {
 					} else {
 						room.undoRequest = WHITE
 					}
-					room.sendToAll([]byte("chat:System:" + GetColor(room.undoRequest) + " wants to undo one step"))
-					room.sendToAll([]byte("undo:request:" + strings.ToLower(GetColor(room.undoRequest))))
+					room.sendToAll([]byte("chat:System:" + strings.Title(strings.ToLower(GetColor(room.undoRequest))) + " wants to undo one step"))
+					room.sendToAll([]byte("undo:request:" + strings.Title(strings.ToLower(GetColor(room.undoRequest)))))
 				}
 			case "accept":
 				if len(slices) < 2 {
