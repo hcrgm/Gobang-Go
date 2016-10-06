@@ -1,22 +1,22 @@
 package main
 
 import (
+	"crypto/sha1"
+	"fmt"
+	"github.com/bitly/go-simplejson"
+	"github.com/kataras/go-sessions"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
+	"github.com/labstack/gommon/random"
 	"gobang"
 	"html/template"
 	"io"
 	"io/ioutil"
-	"github.com/bitly/go-simplejson"
 	"net/http"
-	"strconv"
-	"github.com/kataras/go-sessions"
-	"fmt"
-	"crypto/sha1"
-	"github.com/labstack/gommon/random"
-	"strings"
 	"net/url"
+	"strconv"
+	"strings"
 )
 
 type Template struct {
@@ -24,14 +24,14 @@ type Template struct {
 }
 
 type Config struct {
-	debug bool
-	port int
+	debug    bool
+	port     int
 	useOAuth bool
-	github *OAuthConfig
+	github   *OAuthConfig
 }
 
 type OAuthConfig struct {
-	client_id string
+	client_id     string
 	client_secret string
 }
 
@@ -51,16 +51,18 @@ func main() {
 		panic(err)
 	}
 	config = &Config{
-		debug: json.Get("debug").MustBool(false),
-		port: json.Get("port").MustInt(8011),
+		debug:    json.Get("debug").MustBool(false),
+		port:     json.Get("port").MustInt(8011),
 		useOAuth: json.Get("useOAuth").MustBool(false),
 		github: &OAuthConfig{
-			client_id: json.GetPath("github").Get("client_id").MustString(""),
+			client_id:     json.GetPath("github").Get("client_id").MustString(""),
 			client_secret: json.GetPath("github").Get("client_secret").MustString(""),
 		},
 	}
-	if len(config.github.client_id) == 0 && len(config.github.client_secret) == 0 {
-		panic("Wrong config:Github OAuth")
+	if config.useOAuth {
+		if len(config.github.client_id) == 0 && len(config.github.client_secret) == 0 {
+			panic("Wrong config:Github OAuth")
+		}
 	}
 	e := echo.New()
 	// debug
@@ -90,6 +92,9 @@ func main() {
 }
 
 func Login(c echo.Context) error {
+	if !config.useOAuth {
+		return c.HTML(http.StatusOK, `[<b style="color:#f44336">Login function not enabled</b>]`)
+	}
 	response := ""
 	w := c.Response().(*standard.Response).ResponseWriter
 	r := c.Request().(*standard.Request).Request
@@ -99,23 +104,19 @@ func Login(c echo.Context) error {
 		sess.Delete("name")
 		fallthrough
 	case "info":
-		if !config.useOAuth {
-			response = `[<b style="color:#f44336">Login function not enabled</b>]`
-		} else {
-			username := "Anonymous"
-			signBtn := "Sign in"
-			if name := sess.GetString("name"); len(name) != 0 {
-				username = name
-				signBtn = "Sign out"
-			}
-			response = fmt.Sprintf(`<span id="username">%s</span>&nbsp;&nbsp;<a id="btn_login">[%s]</a><script>$("#btn_login").one("click", login);</script>`, username, signBtn)
+		username := "Anonymous"
+		signBtn := "Sign in"
+		if name := sess.GetString("name"); len(name) != 0 {
+			username = name
+			signBtn = "Sign out"
 		}
+		response = fmt.Sprintf(`<span id="username">%s</span>&nbsp;&nbsp;<a id="btn_login">[%s]</a><script>$("#btn_login").one("click", login);</script>`, username, signBtn)
 	case "oauth":
 		sha := sha1.New()
 		sha.Write([]byte(random.String(16)))
 		state := fmt.Sprintf("%x", sha.Sum(nil))
 		sess.Set("state", state)
-		return c.Redirect(http.StatusFound, "https://github.com/login/oauth/authorize?client_id=" + config.github.client_id + "&state=" + state)
+		return c.Redirect(http.StatusFound, "https://github.com/login/oauth/authorize?client_id="+config.github.client_id+"&state="+state)
 	case "oauth-callback":
 		if len(c.FormValue("code")) == 0 || len(c.FormValue("state")) == 0 || sess.GetString("state") != c.FormValue("state") {
 			return c.HTML(http.StatusBadRequest, "Bad Requesst")
@@ -149,7 +150,7 @@ func Login(c echo.Context) error {
 			if err != nil {
 				return c.HTML(http.StatusInternalServerError, err.Error())
 			}
-			req.Header.Set("Authorization", "token " + accessToken)
+			req.Header.Set("Authorization", "token "+accessToken)
 			response, err = http.DefaultClient.Do(req)
 			if err != nil {
 				return c.HTML(http.StatusInternalServerError, "Cannot send the request to GitHub")
