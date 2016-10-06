@@ -119,7 +119,7 @@ func Login(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "https://github.com/login/oauth/authorize?client_id="+config.github.client_id+"&state="+state)
 	case "oauth-callback":
 		if len(c.FormValue("code")) == 0 || len(c.FormValue("state")) == 0 || sess.GetString("state") != c.FormValue("state") {
-			return c.HTML(http.StatusBadRequest, "Bad Requesst")
+			return c.HTML(http.StatusBadRequest, "Bad Request")
 		}
 		if code := c.FormValue("code"); len("code") != 0 {
 			v := url.Values{}
