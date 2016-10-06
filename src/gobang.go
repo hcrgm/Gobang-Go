@@ -114,7 +114,7 @@ func Login(c echo.Context) error {
 	case "oauth":
 		sha := sha1.New()
 		sha.Write([]byte(random.String(16)))
-		state := base64.URLEncoding.EncodeToString(sha.Sum(nil))
+		state := fmt.Sprintf("%x", sha.Sum(nil))
 		sess.Set("state", state)
 		return c.Redirect(http.StatusMovedPermanently, "https://github.com/login/oauth/authorize?client_id=" + config.github.client_id + "&state=" + state)
 	case "oauth-callback":
@@ -159,7 +159,7 @@ func Login(c echo.Context) error {
 				return c.HTML(http.StatusInternalServerError, "Cannot parse the result")
 			}
 			name := json.Get("name").MustString("")
-			if len(accessToken) == 0 {
+			if len(name) == 0 {
 				return c.HTML(http.StatusInternalServerError, "Cannot get the name")
 			}
 			sess.Set("name", name)
