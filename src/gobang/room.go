@@ -115,6 +115,7 @@ type Room struct {
 	board        *Board
 	steps        int
 	rounds       int
+	undoRequest  int // zero for no any undo request
 	broadcastAll chan []byte
 	register     chan *Client
 	unregister   chan *Client
@@ -263,8 +264,25 @@ func (room *Room) updateAllMap(nc int, clients ...*Client) {
 	}
 }
 
+func (room *Room) isSpectator(client *Client) bool {
+	return client == room.playerBlack && client == room.playerWhite
+}
+
 func (room *Room) canStart() bool {
 	return !room.playing && room.playerBlack != nil && room.playerWhite != nil
+}
+
+func (room *Room) canUndo(holder *Client) bool {
+	if room.isSpectator(holder) {
+		return false
+	}
+	if room.board.lastStepX == -1 || room.board.lastStepY == -1 {
+		return false
+	}
+	if (holder == room.playerBlack && !room.holding) || (holder == room.playerWhite && room.holding) {
+		return true
+	}
+	return false
 }
 
 func (room *Room) gameOver(message string, canRestart bool) {
@@ -378,6 +396,8 @@ func (room *Room) onMessage(message []byte, client *Client) {
 				return
 			}
 			color := room.board.cells[x][y]
+			room.board.lastStepX = x
+			room.board.lastStepY = y
 			if room.holding {
 				if client == room.playerBlack {
 					color = BLACK
@@ -414,14 +434,82 @@ func (room *Room) onMessage(message []byte, client *Client) {
 		case "status":
 			room.sendToAll(message)
 		case "undo":
-			// TODO:Not implemented yet
-			return
-		case "accept":
-			// TODO:Not implemented yet
-			return
-		case "deny":
-			// TODO:Not implemented yet
-			return
+			if len(slices) < 2 {
+				return
+			}
+			switch slices[1] {
+			case "request":
+				if room.canUndo(client) {
+					if room.undoRequest != 0 {
+						return
+					}
+					if client == room.playerBlack {
+						room.undoRequest = BLACK
+					} else {
+						room.undoRequest = WHITE
+					}
+					room.sendToAll([]byte("chat:System:" + GetColor(room.undoRequest) + " wants to undo one step"))
+					room.sendToAll([]byte("undo:request:" + strings.ToLower(GetColor(room.undoRequest))))
+				}
+			case "accept":
+				if len(slices) < 2 {
+					log.Println("A")
+					return
+				}
+				if room.isSpectator(client) {
+					log.Println("B")
+					return
+				}
+				if (client == room.playerBlack && room.undoRequest != WHITE) || (client == room.playerWhite && room.undoRequest != BLACK) {
+					log.Println("sad")
+					return
+				}
+				if room.board.lastStepX == -1 || room.board.lastStepY == -1 {
+					log.Println("D")
+					return
+				}
+				room.board.cells[room.board.lastStepX][room.board.lastStepY] = EMPTY
+				room.update(room.board.lastStepX, room.board.lastStepY)
+				color := ""
+				if client == room.playerBlack {
+					room.sendToWhite([]byte("undo:accept"))
+					color = GetColor(WHITE)
+				} else {
+					room.sendToBlack([]byte("undo:accept"))
+					color = GetColor(BLACK)
+				}
+				color = strings.Title(strings.ToLower(color))
+				room.sendToAll([]byte("chat:System:" + color + " undid one step..."))
+				room.sendToSpectators([]byte("undo:accept:" + color))
+				room.holding = !room.holding
+				room.sendToAll([]byte("turn:" + strings.ToUpper(color) + ":n"))
+				room.undoRequest = 0
+			case "deny":
+				if len(slices) < 2 {
+					return
+				}
+				if room.isSpectator(client) {
+					return
+				}
+				if (client == room.playerBlack && room.undoRequest != WHITE) || (client == room.playerWhite && room.undoRequest != BLACK) {
+					log.Println("sad")
+					return
+				}
+				if room.board.lastStepX == -1 || room.board.lastStepY == -1 {
+					return
+				}
+				color := ""
+				if client == room.playerBlack {
+					room.sendToWhite([]byte("undo:deny"))
+					color = "White"
+				} else {
+					room.sendToBlack([]byte("undo:deny"))
+					color = "Black"
+				}
+				room.sendToAll([]byte("chat:System:Undo denied..."))
+				room.sendToSpectators([]byte("undo:deny:" + color))
+				room.undoRequest = 0
+			}
 		}
 	}
 }

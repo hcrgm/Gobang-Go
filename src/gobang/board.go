@@ -21,8 +21,8 @@ func NewBoard() *Board {
 		}
 	}
 	return &Board{
-		lastStepX: 0,
-		lastStepY: 0,
+		lastStepX: -1,
+		lastStepY: -1,
 		cells:     cell,
 	}
 }
