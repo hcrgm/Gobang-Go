@@ -13,7 +13,7 @@ Then, run this program.
 
 1. Rename "config_sample.json" to "config.json", configure yourself by editing the "config.json" file.
 2. Run "nohup ./gobang > golang.log 2>&1 &"
-3. Visit http://127.0.0.1:port in config.json (int).
+3. Visit http://127.0.0.1:port (port config in config.json, int).
 
 # LICENSE
 GPLv3
