@@ -291,7 +291,6 @@ func (room *Room) gameOver(message string, canRestart bool) {
 	}
 	room.playing = false
 	room.sendToAll([]byte("gameover:" + message))
-	log.Println("GameOver:" + room.roomId + ":" + string(message))
 	if canRestart && room.canStart() {
 		room.startGame(true)
 	}
@@ -320,10 +319,8 @@ func (room *Room) onJoin(client *Client) {
 		if isBlack := rand.Int31n(2); isBlack == 1 {
 			room.playerBlack = client
 			room.holding = true
-			log.Println("Joined as black")
 		} else {
 			room.playerWhite = client
-			log.Println("Joined as white")
 		}
 		client.send <- []byte("room:" + room.roomId)
 	} else {
@@ -332,12 +329,10 @@ func (room *Room) onJoin(client *Client) {
 			room.holding = true
 			room.broadcastAll <- []byte("join:black:" + client.name)
 			client.send <- []byte("join:white:" + room.playerWhite.name)
-			log.Println("Joined as black")
 		} else if room.playerWhite == nil {
 			room.playerWhite = client
 			room.broadcastAll <- []byte("join:white:" + client.name)
 			client.send <- []byte("join:black:" + room.playerBlack.name)
-			log.Println("Joined as white")
 		}
 		room.startGame(false)
 	}
@@ -402,7 +397,6 @@ func (room *Room) onMessage(message []byte, client *Client) {
 				if client == room.playerBlack {
 					color = BLACK
 				} else {
-					log.Println("Holder is black")
 					room.updateToWhite(x, y)
 					return
 				}
@@ -410,7 +404,6 @@ func (room *Room) onMessage(message []byte, client *Client) {
 				if client == room.playerWhite {
 					color = WHITE
 				} else {
-					log.Println("Holder is white")
 					room.updateToBlack(x, y)
 					return
 				}
@@ -453,19 +446,15 @@ func (room *Room) onMessage(message []byte, client *Client) {
 				}
 			case "accept":
 				if len(slices) < 2 {
-					log.Println("A")
 					return
 				}
 				if room.isSpectator(client) {
-					log.Println("B")
 					return
 				}
 				if (client == room.playerBlack && room.undoRequest != WHITE) || (client == room.playerWhite && room.undoRequest != BLACK) {
-					log.Println("sad")
 					return
 				}
 				if room.board.lastStepX == -1 || room.board.lastStepY == -1 {
-					log.Println("D")
 					return
 				}
 				room.board.cells[room.board.lastStepX][room.board.lastStepY] = EMPTY
@@ -492,7 +481,6 @@ func (room *Room) onMessage(message []byte, client *Client) {
 					return
 				}
 				if (client == room.playerBlack && room.undoRequest != WHITE) || (client == room.playerWhite && room.undoRequest != BLACK) {
-					log.Println("sad")
 					return
 				}
 				if room.board.lastStepX == -1 || room.board.lastStepY == -1 {
@@ -518,12 +506,10 @@ func (room *Room) run() {
 	for {
 		select {
 		case client := <-room.register:
-			log.Println("Register a user")
 			room.onJoin(client)
 		case client := <-room.unregister:
 			// Check if we can delete the room
 			if room.onQuit(client) {
-				log.Println("deleting room")
 				delete(roomList.rooms, room.roomId)
 			}
 		case message := <-room.broadcastAll:
