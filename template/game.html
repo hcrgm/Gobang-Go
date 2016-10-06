@@ -8,6 +8,7 @@
     <link href="assets/style/board.css" rel="stylesheet" type="text/css">
     <!--<script src="http://libs.baidu.com/jquery/2.0.3/jquery.min.js" onerror="document.write('<script src=js/lib/jquery.js>&lt;/script&gt;');"></script>-->
     <script src="assets/js/lib/jquery.js"></script>
+    <script src="assets/js/lib/jquery.qrcode.js"></script>
     <script src="assets/js/lib/class.js"></script>
     <script src="assets/js/lib/message.js"></script>
     <script src="assets/js/socket.js"></script>
@@ -20,6 +21,8 @@
             <a class='can_select_text' href='[URL]' onclick='return false;'>[URL]</a><p>
             The game will be started once any player joined the game.</p>
         <p>Room id: #<span class='can_select_text' style='color:#009688;'>[RoomID]</span></p>
+        <p>Or give the following QRCode:</p>
+        <div id="qrcode"></div>
     </script>
     <script type="text/template" id="template_undo_request">
         [Name] requests to undo one step

@@ -24,11 +24,6 @@ function setTurn(t) {
         document.title = document.title.replace("[Turn]", "");
     }
 }
-function htmlEncode(str) {
-    var div = document.createElement("div");
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
-}
 function remove(e, callback) {
     if (!e || e.length < 1)
         return false;
@@ -114,6 +109,7 @@ var socket = new Socket();
                             $("#btn_cancel").click(function () {
                                 location.href = "index.html";
                             });
+                            jQuery("#qrcode").qrcode({"width":150,"height":150,"text":location.href});
                         });
                 appendChat("System: Room #" + args[1] + " created");
                 document.title = "Gobang - #" + args[1];

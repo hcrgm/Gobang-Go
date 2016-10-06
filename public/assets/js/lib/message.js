@@ -61,7 +61,7 @@ window.Message = new (window.MessageAPI = Class.extend({
             });
             setTimeout(function () {
                 $("#dialog").css({
-                    marginTop: "150px"
+                    marginTop: "90px"
                 });
                 if (callback)
                     if (typeof callback == "function")
