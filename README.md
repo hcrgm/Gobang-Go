@@ -8,6 +8,7 @@ If you want to build yourself:
 
 1. Install Go First.
 2. Clone this project, then, just execute "install.sh". You will get a "gobang" executable binary file.
+
 Then, run this program.
 
 1. Rename "config_sample.json" to "config.json", configure yourself by editing the "config.json" file.
