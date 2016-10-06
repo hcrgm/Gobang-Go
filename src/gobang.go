@@ -115,7 +115,7 @@ func Login(c echo.Context) error {
 		sha.Write([]byte(random.String(16)))
 		state := fmt.Sprintf("%x", sha.Sum(nil))
 		sess.Set("state", state)
-		return c.Redirect(http.StatusMovedPermanently, "https://github.com/login/oauth/authorize?client_id=" + config.github.client_id + "&state=" + state)
+		return c.Redirect(http.StatusFound, "https://github.com/login/oauth/authorize?client_id=" + config.github.client_id + "&state=" + state)
 	case "oauth-callback":
 		if len(c.FormValue("code")) == 0 || len(c.FormValue("state")) == 0 || sess.GetString("state") != c.FormValue("state") {
 			return c.HTML(http.StatusBadRequest, "Bad Requesst")
@@ -145,10 +145,11 @@ func Login(c echo.Context) error {
 			}
 			v = url.Values{}
 			v.Set("access_token", accessToken)
-			req, err = http.NewRequest("GET", "https://api.github.com/user" + accessToken, strings.NewReader(v.Encode()))
+			req, err = http.NewRequest("GET", "https://api.github.com/user", nil)
 			if err != nil {
 				return c.HTML(http.StatusInternalServerError, err.Error())
 			}
+			req.Header.Set("Authorization", "token " + accessToken)
 			response, err = http.DefaultClient.Do(req)
 			if err != nil {
 				return c.HTML(http.StatusInternalServerError, "Cannot send the request to GitHub")
@@ -159,10 +160,13 @@ func Login(c echo.Context) error {
 			}
 			name := json.Get("name").MustString("")
 			if len(name) == 0 {
-				return c.HTML(http.StatusInternalServerError, "Cannot get the name")
+				name = json.Get("login").MustString("")
+				if len(name) == 0 {
+					return c.HTML(http.StatusInternalServerError, "Cannot get the name")
+				}
 			}
 			sess.Set("name", name)
-			return c.Redirect(http.StatusMovedPermanently, "index.html")
+			return c.Redirect(http.StatusFound, "index.html")
 		}
 	}
 	return c.HTML(http.StatusOK, response)

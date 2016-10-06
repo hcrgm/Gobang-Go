@@ -72,7 +72,7 @@ function login() {
                 $("#username_arena").text("Loading...");
             }
         }, 200);
-        $("#username_arena").load("login", {action: "loginout"}, function () {
+        $("#username_arena").load("login", {action: "logout"}, function () {
             finished = true;
             $("#login,#l_loading").fadeOut("slow");
         });
