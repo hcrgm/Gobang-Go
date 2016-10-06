@@ -1,0 +1,10 @@
+If you want to use the login function, please set "useOAuth" to true and set GitHub Application's "client_id" and "client_secret".
+{
+    "debug":false,
+    "port":"8080",
+    "useOAuth":false,
+    "github":{
+        "client_id":"your client id",
+        "client_secret":"your client secret"
+    }
+}
