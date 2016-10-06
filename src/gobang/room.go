@@ -197,7 +197,6 @@ func (room *Room) sendToAll(message []byte) {
 func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 	if client == room.playerBlack {
 		// Black left the game
-		log.Println("Black left")
 		room.playerBlack = nil
 		room.gameOver("Black left the game", false)
 		if room.playerWhite != nil {
@@ -207,7 +206,6 @@ func (room *Room) onQuit(client *Client) (deleteRoom bool) {
 		room.closeSpectators()
 	} else if client == room.playerWhite {
 		// White left the game
-		log.Println("White left")
 		room.playerWhite = nil
 		room.gameOver("White left the game", false)
 		if room.playerBlack != nil {
