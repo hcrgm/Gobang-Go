@@ -158,6 +158,7 @@ func (room *Room) startGame(restart bool) {
 			room.sendToAll([]byte("status:white:Holding..."))
 		}
 	}
+	room.undoRequest = 0
 	if room.holding {
 		room.sendToAll([]byte("turn:BLACK"))
 	} else {
