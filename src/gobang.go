@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"golang.org/x/net/html"
 )
 
 type Template struct {
@@ -166,6 +167,7 @@ func Login(c echo.Context) error {
 					return c.HTML(http.StatusInternalServerError, "Cannot get the name")
 				}
 			}
+			name = html.EscapeString(name)
 			sess.Set("name", name)
 			return c.Redirect(http.StatusFound, "index.html")
 		}
