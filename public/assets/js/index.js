@@ -158,13 +158,7 @@ function vibrate(e, callback) {
             }
             $("#txt_join").val((val = val.replace(/^#/, "")));
             $("#btn_join").val("Loading...");
-            $.get("ajax/join.jsp?" + val, function (data) {
-                if (parseInt(data) == 1) {
-                    location.href = "game?" + val;
-                } else {
-                    vibrate($("#txt_join"));
-                }
-            });
+            location.href = "game?" + val;
         });
     }
     var socket = new Socket();
