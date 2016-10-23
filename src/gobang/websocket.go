@@ -31,6 +31,7 @@ func HandleStatusSocket() http.HandlerFunc {
 				roomStatus.Set("watchers", len(room.spectators))
 				roomStatus.Set("owner", room.owner.name)
 				rooms.Set(roomId, roomStatus)
+				roomStatus = simplejson.New()
 			}
 			json, err := rooms.Encode()
 			if err != nil {
