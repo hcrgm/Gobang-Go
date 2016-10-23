@@ -2,6 +2,11 @@
 A multiplayer Gobang game used WebSocket.
 Powered by Golang.
 
+# Screenshots
+![Home](screenshots/1.png)
+![Waiting](screenshots/2.png)
+![Game](screenshots/3.png)
+![Game over](screenshots/4.png)
 # Getting Started
 You can get the releases [here](https://github.com/hcrgm/Gobang-Go/releases)
 
