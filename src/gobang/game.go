@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/kataras/go-sessions"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine/standard"
 	"net/http"
 	"strings"
 )
@@ -12,9 +11,9 @@ import (
 func Game(c echo.Context) error {
 	create := false
 	roomId := ""
-	queryString := c.Request().URL().QueryString()
-	w := c.Response().(*standard.Response).ResponseWriter
-	r := c.Request().(*standard.Request).Request
+	queryString := c.Request().URL.RawQuery
+	w := c.Response().Writer()
+	r := c.Request()
 	sess := sessions.Start(w, r)
 	if strings.EqualFold(queryString, "closed") {
 		return c.Redirect(http.StatusMovedPermanently, "index.html")

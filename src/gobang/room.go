@@ -516,11 +516,10 @@ func (room *Room) run() {
 		}
 	}
 }
-func serveWs(w http.ResponseWriter, r *http.Request) {
+func serveWs(w http.ResponseWriter, r *http.Request) error {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 	sess := sessions.Start(w, r)
 	var room *Room = nil
@@ -539,16 +538,17 @@ func serveWs(w http.ResponseWriter, r *http.Request) {
 		} else {
 			ws.WriteMessage(websocket.TextMessage, []byte("err:Can't join the room:"+roomId))
 			ws.Close()
-			return
+			return nil
 		}
 	} else {
 		ws.WriteMessage(websocket.TextMessage, []byte("err:Internal Server Error"))
 		ws.Close()
-		return
+		return nil
 	}
 	client := NewClient(name, room, ws)
 	go room.run()
 	client.room.register <- client
 	go client.writePump()
 	client.readPump()
+	return nil
 }

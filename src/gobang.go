@@ -6,10 +6,10 @@ import (
 	"github.com/bitly/go-simplejson"
 	"github.com/kataras/go-sessions"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/random"
 	"gobang"
+	"golang.org/x/net/html"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -17,7 +17,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"golang.org/x/net/html"
 )
 
 type Template struct {
@@ -67,10 +66,12 @@ func main() {
 	}
 	e := echo.New()
 	// debug
-	e.SetDebug(config.debug)
+	e.Debug = config.debug
 	e.Use(middleware.Gzip())
-	e.Use(middleware.Static("public"))
-	e.Use(middleware.Logger())
+	e.Static("/", "public")
+	if config.debug {
+		e.Use(middleware.Logger())
+	}
 	t := &Template{
 		templates: template.Must(template.New("").Funcs(template.FuncMap{
 			"loop": func(n int) []int {
@@ -82,14 +83,12 @@ func main() {
 			},
 		}).ParseGlob("template/*.html")),
 	}
-	e.SetRenderer(t)
-	e.GET("/status", standard.WrapHandler(gobang.HandleStatusSocket()))
-	e.GET("/socket", standard.WrapHandler(gobang.HandleGameSocket()))
+	e.Renderer = t
+	e.GET("/status", gobang.HandleStatusSocket)
+	e.GET("/socket", gobang.HandleGameSocket)
 	e.GET("/game", gobang.Game)
 	e.Any("/login", Login)
-	if err := e.Run(standard.New(":" + strconv.Itoa(config.port))); err != nil {
-		panic(err)
-	}
+	e.Logger.Fatal(e.Start(":" + strconv.Itoa(config.port)))
 }
 
 func Login(c echo.Context) error {
@@ -97,8 +96,8 @@ func Login(c echo.Context) error {
 		return c.HTML(http.StatusOK, `[<b style="color:#f44336">Login function not enabled</b>]`)
 	}
 	response := ""
-	w := c.Response().(*standard.Response).ResponseWriter
-	r := c.Request().(*standard.Request).Request
+	w := c.Response().Writer()
+	r := c.Request()
 	sess := sessions.Start(w, r)
 	switch c.FormValue("action") {
 	case "logout":
