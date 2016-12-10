@@ -21,5 +21,13 @@ Then, run this program.
 2. Run `nohup ./gobang > golang.log 2>&1 &`
 3. Visit http://127.0.0.1:port (port config in config.json, int).
 
+# Docker
+Build:`docker build -t gobang .`
+
+Run:`docker run --name gobang --rm gobang`
+
+Pass the configuration:`docker run --name gobang --rm  -e XXX=XXX -e XXX=XXX gobang
+
+Environments: See [Dockerfile](Dockerfile)
 # LICENSE
 GPLv3
