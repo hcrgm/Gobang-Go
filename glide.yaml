@@ -1,0 +1,17 @@
+package: .
+import:
+- package: github.com/bitly/go-simplejson
+- package: github.com/gorilla/websocket
+- package: github.com/kataras/go-sessions
+- package: github.com/labstack/echo
+  subpackages:
+  - middleware
+- package: github.com/labstack/gommon
+  subpackages:
+  - random
+- package: github.com/hcrgm/Gobang-Go
+  subpackages:
+  - gobang
+- package: golang.org/x/net
+  subpackages:
+  - html
