@@ -5,29 +5,22 @@ Powered by Golang.
 # Screenshots
 ![Home](screenshots/1.png)
 ![Waiting](screenshots/2.png)
-![Game](screenshots/3.png)
+![Gaming](screenshots/3.png)
 ![Game over](screenshots/4.png)
 # Getting Started
 You can get the releases [here](https://github.com/hcrgm/Gobang-Go/releases)
 
-If you want to build yourself:
+Build this project:
 
-1. Install Go First.
-2. Clone this project, then, just execute `install.sh`. You will get a `gobang` executable binary file.
+1. Clone this project, then cd to this project.
+2. Run `go get github.com/hcrgm/Gobang-Go`
+3. Run `go build -o gobang_server gobang.go`
 
 Then, run this program.
 
 1. Rename `config_sample.json` to `config.json`, configure yourself by editing the `config.json` file.
-2. Run `nohup ./gobang > golang.log 2>&1 &`
-3. Visit http://127.0.0.1:port (port config in config.json, int).
+2. Run `nohup ./gobang_server > gobang.log 2>&1 &` or use other way you like to run this program. 
+3. Open `http://127.0.0.1:port` (default value of port is 8080) in your browser. That's all.
 
-# Docker
-Build:`docker build -t gobang .`
-
-Run:`docker run --name gobang --rm gobang`
-
-Pass the configuration:`docker run --name gobang --rm  -e XXX=XXX -e XXX=XXX gobang
-
-Environments: See [Dockerfile](Dockerfile)
-# LICENSE
+# License
 GPLv3
